@@ -26,7 +26,6 @@ glam = "0.27.0"
 uuid = { version = "1.11.0", features = ["serde", "v4"] }
 hecs = { version = "0.10.5", features = ["serde"] }
 postcard = { version = "1.0.10", features = ["use-std"] }
-lazy_static = "1.5.0"
 libnoise = "1.1.2"
 log = "0.4.22"
 rand = "0.8.5"
@@ -51,15 +50,19 @@ opt-level = 3
 
 [profile.release]
 opt-level = 3
-panic = "abort"
 debug = 0
 strip = "debuginfo"
 # lto = "thin" # Enable for more inlining with a bigger tradeoff in compile times
+# Note: `panic = "abort"` is intentionally NOT set here. It lives in the
+# `distribution` profile (used to ship the client) so that the long-running
+# server binaries keep unwinding — a panic in one tokio connection task should
+# not abort the whole process.
 
 # Ship this to players:
 #   cargo build --profile distribution -F tracing/release_max_level_error -F log/release_max_level_off
 [profile.distribution]
 inherits = "release"
+panic = "abort"
 strip = true
 lto = "thin"
 codegen-units = 1

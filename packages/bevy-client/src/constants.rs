@@ -1,7 +1,8 @@
 
+use std::sync::LazyLock;
+
 use bevy::utils::hashbrown::HashSet;
 use enum_map::{enum_map, EnumMap};
-use lazy_static::lazy_static;
 use libnoise::prelude::*;
 
 pub mod control_keys {
@@ -62,29 +63,39 @@ pub mod scrap {
 
 /* pub const VAR: Simplex<2> = Source::simplex(42); */
 
-lazy_static! {
-    /* pub static ref SIMPLEX_GENERATOR: libnoise::Scale<2, Simplex<2>> = Source::simplex(42).scale([100., 100.]); */
-    pub static ref SIMPLEX_GENERATOR: Blend<2, Fbm<2, Simplex<2>>, Scale<2, Worley<2>>, Scale<2, Worley<2>>> = Source::simplex(43)                 // start with simplex noise
-    .fbm(5, 0.013, 2.0, 0.5)                        // apply fractal brownian motion
-    .blend(                                         // apply blending...
-        Source::worley(43).scale([0.05, 0.05]),     // ...with scaled worley noise
-        Source::worley(44).scale([0.02, 0.02]));     // ...controlled by other worley noise
-       // apply a closure to the noise
-    pub static ref RESOURCE_INPUTS: EnumMap<Resource, HashSet<Resource>> = enum_map! {
+/* pub static SIMPLEX_GENERATOR: libnoise::Scale<2, Simplex<2>> = Source::simplex(42).scale([100., 100.]); */
+#[allow(clippy::type_complexity)]
+pub static SIMPLEX_GENERATOR: LazyLock<
+    Blend<2, Fbm<2, Simplex<2>>, Scale<2, Worley<2>>, Scale<2, Worley<2>>>,
+> = LazyLock::new(|| {
+    Source::simplex(43) // start with simplex noise
+        .fbm(5, 0.013, 2.0, 0.5) // apply fractal brownian motion
+        .blend(
+            // apply blending...
+            Source::worley(43).scale([0.05, 0.05]), // ...with scaled worley noise
+            Source::worley(44).scale([0.02, 0.02]),
+        ) // ...controlled by other worley noise
+});
+
+pub static RESOURCE_INPUTS: LazyLock<EnumMap<Resource, HashSet<Resource>>> = LazyLock::new(|| {
+    enum_map! {
         Resource::Metal => HashSet::from([Resource::Coal, Resource::Minerals]),
         Resource::Energy => HashSet::new(),
         Resource::Coal => HashSet::new(),
         Resource::Scrap => HashSet::new(),
         Resource::Minerals => HashSet::new(),
-    };
-    pub static ref UNIT_PART_WEIGHTS: EnumMap<UnitPart, u32> = enum_map! {
+    }
+});
+
+pub static UNIT_PART_WEIGHTS: LazyLock<EnumMap<UnitPart, u32>> = LazyLock::new(|| {
+    enum_map! {
         UnitPart::Ranged => 5,
         UnitPart::Generate => 2,
         UnitPart::Battery => 4,
         UnitPart::Harvest => 2,
         _ => 1,
-    };
-}
+    }
+});
 
 pub mod resource_noise_tresholds {
     pub const WALL: (f64, f64) = (0.15, 1.);

@@ -13,7 +13,6 @@ license = "proprietary"
 [dependencies]
 ashscript-types = { workspace = true }
 rand = { workspace = true }
-lazy_static = { workspace = true }
 hexx = { workspace = true }
 libnoise = { workspace = true }
 enum-map = { workspace = true }

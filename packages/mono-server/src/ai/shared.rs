@@ -1,8 +1,9 @@
 
+use std::sync::LazyLock;
+
 use enum_map::{enum_map, Enum, EnumMap};
 use hashbrown::HashSet;
 use hexx::Hex;
-use lazy_static::lazy_static;
 
 #[derive(Default)]
 pub struct AiFeatures {
@@ -61,11 +62,11 @@ pub enum Stat {
     CpuUsage,
 }
 
-lazy_static! {
-    pub static ref STATS_TO_AVERAGE: EnumMap<Stat, bool> = enum_map! {
+pub static STATS_TO_AVERAGE: LazyLock<EnumMap<Stat, bool>> = LazyLock::new(|| {
+    enum_map! {
         _ => false
-    };
-}
+    }
+});
 
 #[derive(Enum, Debug, Clone, Copy, Eq, PartialEq)]
 pub enum UnitRole {
