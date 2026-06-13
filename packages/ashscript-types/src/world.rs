@@ -4,7 +4,7 @@ use hecs::serialize::column::{
     deserialize_column, try_serialize, try_serialize_id, DeserializeContext, SerializeContext,
 };
 use hecs::{Archetype, ColumnBatchBuilder, ColumnBatchType, World};
-use postcard::ser_flavors::{AllocVec, Flavor, HVec, Slice};
+use postcard::ser_flavors::{AllocVec, Flavor};
 use serde::{Deserialize, Serialize};
 
 use crate::components::assembler::Assembler;
@@ -29,8 +29,6 @@ use crate::components::unit::Unit;
 use crate::objects::GameObjectKind;
 
 pub struct WorldWrapper(pub World);
-
-fn serialize_archetypes() {}
 
 // Identifiers for the components we want to include in the serialization process:
 #[derive(Serialize, Deserialize)]
@@ -362,21 +360,20 @@ impl SerializeContext for SaveContextSerialize {
 }
 
 pub fn serialize_world_data(world: &World) -> Vec<u8> {
-    let mut buffer_vec: Vec<u8> = vec![];
-    let buffer: &mut [u8] = buffer_vec.as_mut_slice();
-    let buffer_storage: Slice = Slice::new(buffer);
-    let mut hbufff: AllocVec<> = AllocVec::new();
-    let _ = hbufff.try_extend(&buffer);
-    let mut serializer = postcard::Serializer { output: hbufff };
+    let mut serializer = postcard::Serializer {
+        output: AllocVec::new(),
+    };
 
-    let _ = hecs::serialize::column::serialize(world, &mut SaveContextSerialize::default(), &mut serializer);
+    let _ = hecs::serialize::column::serialize(
+        world,
+        &mut SaveContextSerialize::default(),
+        &mut serializer,
+    );
 
-    // println!("buffer slice {:?}", buffer);
-    // println!("buffer storage {:#?}", buffer_storage);
-    // println!("serializer {:#?}", serializer);
-    buffer_vec;
-
-    serializer.output.finalize().ok().unwrap()
+    serializer
+        .output
+        .finalize()
+        .expect("failed to finalize world serialization")
 }
 
 pub fn deserialize_world_data(
