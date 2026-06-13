@@ -1,0 +1,21 @@
+[package]
+name = "intent-processor"
+version = "0.1.0"
+description = "Experimental RabbitMQ <-> Socket.IO intent/game-state bridge for Ashscript (not currently wired into the server or client)"
+authors = ["InfinityDevTech"]
+edition.workspace = true
+license.workspace = true
+homepage.workspace = true
+repository.workspace = true
+
+[dependencies]
+axum = { workspace = true }
+fern = { workspace = true }
+humantime = { workspace = true }
+log = { workspace = true }
+serde_json = { workspace = true }
+socketioxide = { workspace = true }
+tokio = { workspace = true }
+futures = "0.3.31"
+lapin = "2.5.0"
+dotenvy = "0.15.7"
