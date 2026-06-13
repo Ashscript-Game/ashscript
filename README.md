@@ -3,16 +3,15 @@
 Monorepo for **Ashscript**, a programming game where players write code to command units on a hex grid.
 
 This repository is a [Cargo workspace](https://doc.rust-lang.org/cargo/reference/workspaces.html)
-consolidating what were previously four separate repositories.
+consolidating what were previously separate repositories.
 
 ## Packages
 
 | Package | Path | Kind | Description |
 | --- | --- | --- | --- |
 | [`ashscript-types`](packages/ashscript-types) | `packages/ashscript-types` | lib | Shared game/state types (components, intents, world, keyframes). The dependency hub used by the server and client. |
-| [`mono-server`](packages/mono-server) | `packages/mono-server` | bin | Monolithic game server: runs the simulation engine and serves world keyframes to clients over a WebSocket (`:3000/game-state`). |
+| [`mono-server`](packages/mono-server) | `packages/mono-server` | bin | Monolithic game server: runs the simulation engine — including intent processing (player scripts → intents → actions → state) — and serves world keyframes to clients over a WebSocket (`:3000/game-state`). |
 | [`bevy-client`](packages/bevy-client) | `packages/bevy-client` | bin | The game client, built with [Bevy](https://bevyengine.org/). Renders the world streamed from the server. |
-| [`intent-processor`](packages/intent-processor) | `packages/intent-processor` | bin | ⚠️ **Experimental / not currently wired in.** A standalone RabbitMQ ⇄ Socket.IO bridge node. Kept for reference; not part of the live server/client loop. |
 
 ### Architecture
 
@@ -20,9 +19,13 @@ consolidating what were previously four separate repositories.
 bevy-client  ──WebSocket (:3000/game-state)──►  mono-server  ──uses──►  ashscript-types
      │                                               │
      └────────────────── depends on ────────────────┴──────────────►  ashscript-types
-
-intent-processor  (experimental, standalone — RabbitMQ/Socket.IO; not in the live loop)
 ```
+
+Intent processing lives inside `mono-server`'s engine (`engine/bots.rs`,
+`engine/actions/`): each tick it runs player scripts into intents, turns intents
+into actions, and applies them to game state. (A former standalone
+`intent-processor` RabbitMQ bridge experiment was superseded by this and removed;
+its history remains in the archived `Ashscript-Game/intent-processor` repo.)
 
 ## Development
 
@@ -37,9 +40,6 @@ cargo run -p mono-server
 
 # Run the client (dev features = dynamic linking + asset hot-reload, faster iteration)
 cargo run -p bevy-client --features dev
-
-# Run the experimental intent-processor (needs a reachable RabbitMQ broker)
-cargo run -p intent-processor
 ```
 
 ### Shipping the client
@@ -58,8 +58,6 @@ real values:
 | Variable | Used by | Default | Purpose |
 | --- | --- | --- | --- |
 | `MONO_SERVER_BIND` | mono-server | `0.0.0.0:3000` | game-state WebSocket bind address |
-| `RABBITMQ_URL` | intent-processor | `amqp://guest:guest@localhost:5672/%2f` | RabbitMQ connection string |
-| `INTENT_PROCESSOR_BIND` | intent-processor | `0.0.0.0:3000` | HTTP/Socket.IO bind address |
 
 ## Workspace layout
 
