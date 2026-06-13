@@ -19,7 +19,8 @@ impl Plugin for DebugPlugin {
 }
 
 fn toggle_debug_ui(mut debug_ui: ResMut<DebugUI>, input: Res<ButtonInput<KeyCode>>) {
-    if input.pressed(KeyCode::F5) {
+    // `just_pressed` so one keypress toggles once instead of flipping every frame held.
+    if input.just_pressed(KeyCode::F5) {
         debug_ui.enabled = !debug_ui.enabled;
     }
 }

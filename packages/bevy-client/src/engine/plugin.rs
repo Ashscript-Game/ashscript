@@ -53,8 +53,9 @@ impl Plugin for EnginePlugin {
 }
 
 fn reset_projectile_move_end_timer(mut projectile_timer: ResMut<ProjectileMoveEndTimer>, state: Res<State>) {
-    projectile_timer.0.reset();
-    Timer::from_seconds(
+    // Re-arm the timer against the most recent observed tick duration so projectile
+    // timing tracks the real server tick rate instead of the fixed startup value.
+    projectile_timer.0 = Timer::from_seconds(
         state.global.last_tick_duration.as_secs_f32() * PROJECTILE_MOVE_END_TICK_PORTION,
         TimerMode::Once,
     );

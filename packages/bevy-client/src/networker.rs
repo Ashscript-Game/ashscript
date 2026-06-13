@@ -178,8 +178,14 @@ pub fn handle_network_events(network_info: ResMut<NetworkInfo>, mut state: ResMu
             ewebsock::WsEvent::Message(ewebsock::WsMessage::Binary(data)) => {
                 println!("received binary message of len {:?}", data.len());
 
-                let keyframe: KeyFrame =
-                    postcard::from_bytes(&data).expect("failed to deserialize keyframe");
+                let keyframe: KeyFrame = match postcard::from_bytes(&data) {
+                    Ok(keyframe) => keyframe,
+                    Err(err) => {
+                        // A single malformed frame must not crash the client.
+                        error!("failed to deserialize keyframe: {err}");
+                        return;
+                    }
+                };
 
                 let Some(world) = deserialize_world_data(keyframe.world_data) else {
                     

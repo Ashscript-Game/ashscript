@@ -84,6 +84,6 @@ pub fn update(game_state: &mut GameState) {
     }
 
     for (entity, (turret, energy)) in &mut game_state.world.query::<(&Turret, &mut Energy)>() {
-        let _ = energy.current.saturating_add(1000);
+        energy.current = energy.current.saturating_add(1000).min(energy.capacity);
     }
 }
