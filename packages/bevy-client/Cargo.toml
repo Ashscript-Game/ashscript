@@ -1,0 +1,50 @@
+[package]
+name = "bevy-client"
+version = "0.1.0"
+description = "Ashscript Bevy game client"
+edition.workspace = true
+authors.workspace = true
+homepage.workspace = true
+repository.workspace = true
+# Preserved from the original repo: the client ships to players and is not
+# under the workspace's MIT/Apache license.
+license = "proprietary"
+
+[dependencies]
+ashscript-types = { workspace = true }
+rand = { workspace = true }
+lazy_static = { workspace = true }
+hexx = { workspace = true }
+libnoise = { workspace = true }
+enum-map = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+postcard = { workspace = true }
+uuid = { workspace = true }
+hecs = { workspace = true }
+log = { workspace = true, features = ["max_level_debug", "release_max_level_warn"] }
+
+bevy = { version = "0.14.1", default-features = true, features = [
+    "bevy_render",
+    "bevy_core_pipeline",
+    "bevy_winit",
+    "bevy_asset",
+    "bevy_sprite",
+    "bevy_pbr",
+    "embedded_watcher",
+] }
+bevy-inspector-egui = "0.23.0"
+bevy_magic_light_2d = { git = "https://github.com/zaycev/bevy-magic-light-2d.git", branch = "issue/64" }
+bevy_egui = "0.30.0"
+bevy_mqtt = { version = "0.4.2", features = ["websocket"] }
+rumqttc = "0.24.0"
+rust_socketio = "0.6.0"
+bevy_eventwork = "0.9.0"
+bevy_eventwork_mod_websockets = "0.2.0"
+url = "2.5.2"
+ewebsock = "0.7.0"
+bevy_hanabi = "0.13.0"
+
+[features]
+# cargo run --features dev
+dev = ["bevy/dynamic_linking", "bevy/file_watcher", "bevy/asset_processor"]
