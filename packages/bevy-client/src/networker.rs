@@ -1,216 +1,128 @@
-use crate::components::{Actions, NetDebugStats, State, TickEvent};
-use ashscript_types::{keyframe::KeyFrame, world::deserialize_world_data};
-use bevy::{
-    app::{App, Plugin, Startup},
-    prelude::*,
-    render::{camera::RenderTarget, view::RenderLayers},
-    utils::hashbrown::HashMap,
+use std::sync::{
+    mpsc::{self, Receiver, Sender},
+    Mutex,
 };
-use bevy::{prelude::*, render::settings, tasks::TaskPool};
-use bevy_eventwork::{EventworkRuntime, Network};
-use bevy_eventwork_mod_websockets::{NetworkSettings, WebSocketProvider};
-use rust_socketio::{ClientBuilder, Payload, RawClient};
-use serde_json::json;
-use std::{net::TcpStream, sync::mpsc::Receiver};
+use std::time::Duration;
 
-/*
-pub fn setup_receiver(mut state: ResMut<State> /* , mut actions: ResMut<Actions> */) {
-    let mut value: HashMap<String, String> = HashMap::new();
+use ashscript_types::{keyframe::KeyFrame, world::deserialize_world_data};
+use bevy::prelude::*;
+use tungstenite::Message;
 
-    let callback = afunc(
-        move |payload: Payload,
-              socket: RawClient /* value: &mut HashMap<String, String> */| {
-            let mut state = state;
-            match payload {
-                Payload::String(str) => {
-                    println!("Received string: {}", str);
-                    value.insert("key".to_string(), "value".to_string());
-                }
-                Payload::Binary(bin_data) => println!("Received bytes: {:#?}", bin_data),
-                Payload::Text(text) => {
-                    println!("Received text: {:#?}", text);
+use crate::components::{Actions, NetDebugStats, State, TickEvent};
 
-                    // let res = serde_json::from_str(&text).expect("unable to deserialize");
-                    // serde_json::from_value(value)
-                    let ser_keyframe = text
-                        .iter()
-                        .filter_map(|v| match v {
-                            serde_json::Value::Bool(z) => {
-                                println!("Received bool: {:#?}", z);
-                                None
-                            }
-                            serde_json::Value::Number(n) => {
-                                println!("Received number: {:#?}", n);
+/// WebSocket endpoint the server streams keyframes from.
+const SERVER_URL: &str = "ws://localhost:3000/game-state";
 
-                                Some(n.as_u64().unwrap() as u8)
-                            }
-                            serde_json::Value::String(s) => {
-                                println!("Received string: {:#?}", s);
-                                None
-                            }
-                            _ => {
-                                println!("Received unknown: {:#?}", v);
-                                None
-                            }
-                        })
-                        .collect::<Vec<u8>>();
+/// How long to wait before retrying after a failed connection or a dropped
+/// socket, so a server restart doesn't busy-loop the receiver thread.
+const RECONNECT_DELAY: Duration = Duration::from_secs(1);
 
-                    let keyframe = postcard::from_bytes::<KeyFrame>(ser_keyframe.as_slice())
-                        .expect("unable to deserialize");
-                    // state.map = keyframe.map;
-
-                    println!("processed keyframe for tick: {}", keyframe.global.tick);
-                }
-            }
-
-            socket
-                .emit("test", json!({"this is an ack": true}))
-                .expect("Server unreachable")
-        },
-    );
-
-    // get a socket that is connected to the admin namespace
-    let socket = ClientBuilder::new("http://localhost:3000")
-        .namespace("/client")
-        .on("game_state", callback)
-        .on("error", |err, _| eprintln!("Error: {:#?}", err))
-        .connect()
-        .expect("Connection failed");
-}
-*/
-
-/* fn state_callback<T: Into<Event>, F>(payload: Payload, client: Client, state: &ResMut<State>) -> Self
-where
-    F: for<'a> std::ops::FnMut(Payload, Client) -> BoxFuture<'static, ()>
-        + 'static
-        + Send
-        + Sync, {
-    println!("received keyframe: {:?}", payload);
-
-    async move {
-        client
-        .emit("test", json!({"got ack": true}))
-        .await
-        .expect("Server unreachable");
-    }
-    .boxed()
-} */
-
-/* fn actions_callback(payload: Payload, client: Client) {
-    println!("received action: {:?}", payload);
-} */
-
-// startup
-// create a receiver
-// when it receives emissions
-
-// update
-
-/* pub fn connection_handler(mut events: EventReader<NetworkEvent>) {
-    for event in events.read() {
-        match event {
-            NetworkEvent::Message(_, msg) => {
-                info!("{}", String::from_utf8_lossy(msg));
-            }
-            NetworkEvent::SendError(err, msg) => {
-                error!(
-                    "NetworkEvent::SendError (payload [{:?}]): {:?}",
-                    msg.payload, err
-                );
-            }
-            NetworkEvent::RecvError(err) => {
-                error!("NetworkEvent::RecvError: {:?}", err);
-            }
-            // discard irrelevant events
-            _ => {}
-        }
-    }
-}
-
-pub fn hello_world(remote_addr: Res<SocketAddrResource>, mut transport: ResMut<Transport>) {
-    transport.send(**remote_addr, b"Hello world!");
-} */
-
+/// Holds the receiving end of the channel fed by the background WebSocket
+/// thread. The socket itself lives on that thread; the Bevy world only ever
+/// sees decoded binary frames.
+///
+/// `Receiver` is `Send` but `!Sync`, so it is wrapped in a `Mutex` to satisfy
+/// the `Resource` bound. Only `handle_network_events` touches it.
 #[derive(Resource)]
 pub struct NetworkInfo {
-    // This isn't used right now but seems to be used internally by `ewebsock`
-    // to track whether or not to keep the connection open, so let's just keep
-    // it here.
-    pub sender: std::sync::Mutex<ewebsock::WsSender>,
-    pub receiver: std::sync::Mutex<ewebsock::WsReceiver>,
+    receiver: Mutex<Receiver<Vec<u8>>>,
 }
 
+/// Connect to the server and spawn the background receiver thread.
+///
+/// The client is receive-only: the server pushes a binary keyframe each tick
+/// and the client never needs to send. The thread owns the blocking socket and
+/// forwards every binary payload over an `mpsc` channel, reconnecting on error.
 pub fn create_network_resource() -> NetworkInfo {
-    let options = ewebsock::Options::default();
-    let (sender, receiver) = ewebsock::connect("ws://localhost:3000/game-state", options).unwrap();
-
-    let _ = sender;
+    let (sender, receiver) = mpsc::channel();
+    spawn_receiver(sender);
 
     NetworkInfo {
-        sender: std::sync::Mutex::new(sender),
-        receiver: std::sync::Mutex::new(receiver),
+        receiver: Mutex::new(receiver),
     }
 }
 
-pub fn setup_receiver(
-    net: ResMut<Network<WebSocketProvider>>,
-    task_pool: Res<EventworkRuntime<TaskPool>>,
-    settings: Res<NetworkSettings>,
-) {
-    net.connect(
-        url::Url::parse("ws://localhost:3000/game-state").unwrap(),
-        &task_pool.0,
-        &settings,
-    );
-}
+/// Runs the blocking WebSocket read loop on a dedicated OS thread.
+///
+/// Tungstenite is synchronous, so this avoids pulling an async runtime into the
+/// client. The thread reconnects indefinitely; it exits only when the channel's
+/// receiver is dropped (i.e. the app is shutting down), detected as a send error.
+fn spawn_receiver(sender: Sender<Vec<u8>>) {
+    std::thread::Builder::new()
+        .name("ws-receiver".into())
+        .spawn(move || loop {
+            match tungstenite::connect(SERVER_URL) {
+                Ok((mut socket, _response)) => {
+                    info!("connected to {SERVER_URL}");
 
-pub fn handle_network_events(network_info: ResMut<NetworkInfo>, mut state: ResMut<State>, mut actions: ResMut<Actions>, mut net_stats: ResMut<NetDebugStats>, mut event_writer: EventWriter<TickEvent>) {
-    if let Some(message) = network_info.receiver.lock().unwrap().try_recv() {
-        info!("Received event");
-        match message {
-            ewebsock::WsEvent::Opened => {
-                println!("connected");
-            }
-
-            ewebsock::WsEvent::Closed => {
-                println!("disconnected");
-            }
-            ewebsock::WsEvent::Message(ewebsock::WsMessage::Binary(data)) => {
-                println!("received binary message of len {:?}", data.len());
-
-                net_stats.record_keyframe(data.len());
-
-                let keyframe: KeyFrame = match postcard::from_bytes(&data) {
-                    Ok(keyframe) => keyframe,
-                    Err(err) => {
-                        // A single malformed frame must not crash the client.
-                        error!("failed to deserialize keyframe: {err}");
-                        return;
+                    loop {
+                        match socket.read() {
+                            Ok(Message::Binary(data)) => {
+                                // A send error means the world dropped the
+                                // `Receiver`; the app is gone, so stop cleanly.
+                                if sender.send(data.to_vec()).is_err() {
+                                    return;
+                                }
+                            }
+                            // Tungstenite answers pings internally; other frame
+                            // kinds carry no game state, so they are ignored.
+                            Ok(Message::Close(_)) => {
+                                warn!("server closed the connection");
+                                break;
+                            }
+                            Ok(_) => {}
+                            Err(err) => {
+                                warn!("websocket read error: {err}");
+                                break;
+                            }
+                        }
                     }
-                };
-
-                let Some(world) = deserialize_world_data(keyframe.world_data) else {
-                    
-                    return
-                 };
-
-                // println!("{:?}", keyframe);
-
-                state.map = keyframe.map;
-                state.global = keyframe.global;
-                state.world = world;
-
-                actions.0 = keyframe.actions;
-                
-                event_writer.send(TickEvent);
-            }
-            ewebsock::WsEvent::Message(msg) => {
-                println!("received message {:?}", msg);
+                }
+                Err(err) => {
+                    warn!("failed to connect to {SERVER_URL}: {err}");
+                }
             }
 
-            ewebsock::WsEvent::Error(err) => {
-                println!("recv error: {:?}", err);
-            }
+            std::thread::sleep(RECONNECT_DELAY);
+        })
+        .expect("failed to spawn websocket receiver thread");
+}
+
+/// Drains one keyframe per frame from the receiver thread and applies it to the
+/// world. Processing a single frame per Bevy frame matches the original
+/// transport's pacing (the server ticks far slower than the client renders).
+pub fn handle_network_events(
+    network_info: ResMut<NetworkInfo>,
+    mut state: ResMut<State>,
+    mut actions: ResMut<Actions>,
+    mut net_stats: ResMut<NetDebugStats>,
+    mut event_writer: EventWriter<TickEvent>,
+) {
+    // `try_recv` is non-blocking; `Err` (empty or disconnected) is a no-op.
+    let Ok(data) = network_info.receiver.lock().unwrap().try_recv() else {
+        return;
+    };
+
+    net_stats.record_keyframe(data.len());
+
+    // A single malformed frame must not crash the client.
+    let keyframe: KeyFrame = match postcard::from_bytes(&data) {
+        Ok(keyframe) => keyframe,
+        Err(err) => {
+            error!("failed to deserialize keyframe: {err}");
+            return;
         }
-    }
+    };
+
+    let Some(world) = deserialize_world_data(keyframe.world_data) else {
+        error!("failed to deserialize world data in keyframe");
+        return;
+    };
+
+    state.map = keyframe.map;
+    state.global = keyframe.global;
+    state.world = world;
+    actions.0 = keyframe.actions;
+
+    event_writer.send(TickEvent);
 }

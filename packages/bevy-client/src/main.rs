@@ -11,12 +11,9 @@ use bevy::{
     diagnostic::{EntityCountDiagnosticsPlugin, FrameTimeDiagnosticsPlugin},
     log::{Level, LogPlugin},
     prelude::*,
-    tasks::TaskPoolBuilder,
     utils::hashbrown::HashMap,
     DefaultPlugins,
 };
-use bevy_eventwork::EventworkRuntime;
-use bevy_eventwork_mod_websockets::{NetworkSettings, WebSocketProvider};
 use bevy_magic_light_2d::{gi::BevyMagicLight2DPlugin, prelude::*};
 use components::{
     Actions, DebugUI, GameSettings, GameState, LoadedChunks, NetDebugStats, PlayerStates, ProjectileMoveEndTimer, SelectedGameObjects, State, UnloadedChunks
@@ -105,7 +102,6 @@ fn main() {
         .register_type::<SkylightLight2D>()
         .register_type::<BevyMagicLight2DSettings>()
         .register_type::<LightPassParams>()
-        .insert_resource(NetworkSettings::default())
         .insert_resource(LoadedChunks::default())
         .insert_resource(UnloadedChunks::default())
         .insert_resource(SelectedGameObjects::default())
