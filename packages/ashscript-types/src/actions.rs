@@ -26,6 +26,90 @@ impl ActionsByKind {
             ..Default::default()
         }
     }
+
+    /// A compact, per-kind count of the actions in this batch.
+    ///
+    /// Used for concise structured logging on the server and the live actions
+    /// readout on the client, instead of dumping every action with `{:?}`.
+    pub fn counts(&self) -> ActionCounts {
+        ActionCounts {
+            unit_move: self.unit_move.len(),
+            unit_attack: self.unit_attack.len(),
+            turret_attack: self.turret_attack.len(),
+            factory_spawn_unit: self.factory_spawn_unit.len(),
+            unit_spawn_unit: self.unit_spawn_unit.len(),
+            resource_transfer: self.resource_transfer.len(),
+            turret_repair: self.turret_repair.len(),
+            substation_collect: self.substation_collect.len(),
+            extract_resource: self.extract_resource.len(),
+        }
+    }
+}
+
+/// Per-kind counts of an [`ActionsByKind`] batch. Cheap to copy and log.
+#[derive(Default, Debug, Clone, Copy, Serialize, Deserialize)]
+pub struct ActionCounts {
+    pub unit_move: usize,
+    pub unit_attack: usize,
+    pub turret_attack: usize,
+    pub factory_spawn_unit: usize,
+    pub unit_spawn_unit: usize,
+    pub resource_transfer: usize,
+    pub turret_repair: usize,
+    pub substation_collect: usize,
+    pub extract_resource: usize,
+}
+
+impl ActionCounts {
+    /// Total number of actions across all kinds.
+    pub fn total(&self) -> usize {
+        self.unit_move
+            + self.unit_attack
+            + self.turret_attack
+            + self.factory_spawn_unit
+            + self.unit_spawn_unit
+            + self.resource_transfer
+            + self.turret_repair
+            + self.substation_collect
+            + self.extract_resource
+    }
+
+    /// `(label, count)` pairs in a stable order, for tabular/HUD rendering.
+    pub fn entries(&self) -> [(&'static str, usize); 9] {
+        [
+            ("move", self.unit_move),
+            ("attack", self.unit_attack),
+            ("turret_attack", self.turret_attack),
+            ("factory_spawn", self.factory_spawn_unit),
+            ("unit_spawn", self.unit_spawn_unit),
+            ("transfer", self.resource_transfer),
+            ("turret_repair", self.turret_repair),
+            ("substation_collect", self.substation_collect),
+            ("extract", self.extract_resource),
+        ]
+    }
+}
+
+impl std::fmt::Display for ActionCounts {
+    /// Compact, only-nonzero rendering, e.g. `move=3 attack=2 unit_spawn=1`.
+    /// Renders `none` when there are no actions.
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let mut wrote = false;
+        for (label, count) in self.entries() {
+            if count == 0 {
+                continue;
+            }
+            if wrote {
+                f.write_str(" ")?;
+            }
+            write!(f, "{label}={count}")?;
+            wrote = true;
+        }
+        if !wrote {
+            f.write_str("none")?;
+        }
+        Ok(())
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
