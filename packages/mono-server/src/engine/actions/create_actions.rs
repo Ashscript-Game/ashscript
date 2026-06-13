@@ -12,6 +12,8 @@ use ashscript_types::{
 use hashbrown::{HashMap, HashSet};
 use hexx::Hex;
 
+use tracing::{debug, warn};
+
 use crate::{engine::bots::run_bots, game_state::GameState};
 
 /* pub type IntentsByAction = EnumMap<IntentName, Vec<Intent>>; */
@@ -26,6 +28,24 @@ pub struct IntentsByKind {
     pub resource_transfer: Vec<intents::ResourceTransfer>,
     pub turret_repair: Vec<intents::TurretRepair>,
     pub extract_resource: Vec<intents::ExtractResource>,
+}
+
+// The upstream `intents::*` payload types don't implement `Debug`, so we render
+// per-kind counts instead of the full intent contents. This keeps the type
+// inspectable in logs/`?`-formatting without touching the shared crate.
+impl std::fmt::Debug for IntentsByKind {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("IntentsByKind")
+            .field("unit_move", &self.unit_move.len())
+            .field("unit_attack", &self.unit_attack.len())
+            .field("turret_attack", &self.turret_attack.len())
+            .field("factory_spawn_unit", &self.factory_spawn_unit.len())
+            .field("unit_spawn_unit", &self.unit_spawn_unit.len())
+            .field("resource_transfer", &self.resource_transfer.len())
+            .field("turret_repair", &self.turret_repair.len())
+            .field("extract_resource", &self.extract_resource.len())
+            .finish()
+    }
 }
 
 impl IntentsByKind {
@@ -59,6 +79,17 @@ impl IntentsByKind {
 
 pub fn get_bot_actions(game_state: &mut GameState) -> ActionsByKind {
     let intents_by_kind = run_bots(game_state);
+
+    let intent_total = intents_by_kind.unit_move.len()
+        + intents_by_kind.unit_attack.len()
+        + intents_by_kind.turret_attack.len()
+        + intents_by_kind.factory_spawn_unit.len()
+        + intents_by_kind.unit_spawn_unit.len()
+        + intents_by_kind.resource_transfer.len()
+        + intents_by_kind.turret_repair.len()
+        + intents_by_kind.extract_resource.len();
+    debug!(intents = intent_total, "collected bot intents");
+
     let mut actions_by_kind = ActionsByKind::new();
 
     create_turret_attack_actions(
@@ -394,7 +425,7 @@ fn create_factory_spawn_unit_actions(
             .entity_at(&out, GameObjectKind::Unit)
             .is_some()
         {
-            println!("UNIT ALREADY AT HEX TRYING TO SPAWN TO");
+            warn!("unit already at hex trying to spawn to");
             continue;
         };
 

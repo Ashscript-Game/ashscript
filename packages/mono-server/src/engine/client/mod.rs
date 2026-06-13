@@ -9,8 +9,8 @@ use std::{net::SocketAddr, sync::Arc};
 use tokio::sync::broadcast::Sender;
 //allows to extract the IP of connecting user
 use axum::extract::connect_info::ConnectInfo;
-use log::{debug, error, info};
 use serde_json::Value;
+use tracing::{debug, error, info, trace};
 use tokio::net::{TcpListener, TcpStream};
 use tokio_tungstenite::{
     accept_hdr_async,
@@ -36,18 +36,18 @@ pub fn emit_tick(game_state: &GameState, actions: &ActionsByKind, sender: &mut S
     let keyframe = KeyFrame::from_existing(game_state.map.clone(), &game_state.world, game_state.global.clone(), actions.clone());
 
     let ser_keyframe = postcard::to_stdvec(&keyframe).expect("failed to postcard keyframe");
-    println!("ser keyframe len: {}", ser_keyframe.len());
+    debug!(bytes = ser_keyframe.len(), "serialized keyframe");
 
     // Emit the actions that have happened since
 
     match sender.send(Arc::new(ser_keyframe)) {
         Ok(_) => {}
         Err(e) => {
-            dbg!(e);
+            error!(error = %e, "failed to broadcast keyframe");
         }
     }
 
-    println!("tick emit");
+    trace!("tick emitted to clients");
 }
 
 /// The handler for the HTTP request (this gets called when the HTTP request lands at the start
@@ -65,7 +65,7 @@ pub async fn ws_handler(
     } else {
         String::from("Unknown browser")
     };
-    println!("`{user_agent}` connected.");
+    info!(%user_agent, "client connected");
     // finalize the upgrade process by returning upgrade callback.
     // we can customize the callback by sending additional info such as address.
     ws.on_upgrade(move |socket| handle_socket(socket, receiver))
@@ -134,7 +134,7 @@ async fn handle_socket(
         let value = receiver.recv().await;
         let value = match value {
             Err(e) => {
-                dbg!(e);
+                error!(error = %e, "broadcast receive failed; closing socket");
                 break;
             }
             Ok(v) => v,
@@ -143,7 +143,7 @@ async fn handle_socket(
         // UGH WHY DOES THIS NEED A FULL VEC
         match socket.send(Message::Binary((*value).clone())).await {
             Err(e) => {
-                dbg!(e);
+                error!(error = %e, "failed to send keyframe to socket");
             }
             Ok(_) => {}
         }

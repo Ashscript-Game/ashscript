@@ -4,11 +4,12 @@
 
 use axum::routing::any;
 use engine::{client::ws_handler, start::start};
-use log::info;
 use logging::setup_logger;
 use std::sync::Arc;
+use tracing::info;
 
 pub mod ai;
+pub mod debug;
 pub mod engine;
 pub mod game_state;
 pub mod logging;
@@ -19,7 +20,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Load configuration from a local .env if present (gitignored).
     dotenvy::dotenv().ok();
 
-    setup_logger()?;
+    // Hold the non-blocking log writer's guard for the whole process so that
+    // file-backed logs are flushed on exit.
+    let _log_guard = setup_logger()?;
 
     info!("Welcome to the AshScript monolithic server. Starting web-services.");
 

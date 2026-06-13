@@ -30,12 +30,15 @@ libnoise = "1.1.2"
 log = "0.4.22"
 rand = "0.8.5"
 
+# Tracing / observability
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt", "json"] }
+tracing-appender = "0.2"
+
 # Async / server stack
 tokio = { version = "1.40.0", features = ["full"] }
 axum = "0.7.7"
 socketioxide = { version = "0.14.1", features = ["state"] }
-fern = { version = "0.6.2", features = ["colored"] }
-humantime = "2.1.0"
 
 # Profiles live at the workspace root (Cargo ignores profiles in member crates).
 # These follow Bevy's recommended setup: optimize dependencies even in dev so the

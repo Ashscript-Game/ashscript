@@ -7,6 +7,7 @@ use ashscript_types::{
     resource::Resource,
 };
 use hexx::hex;
+use tracing::debug;
 use uuid::Uuid;
 
 use crate::{
@@ -26,7 +27,7 @@ pub fn generate(game_state: &mut GameState) {
             },
         );
 
-        println!("generating player {} with id {}", i, id);
+        debug!(player = i, %id, "generated player");
     }
 
     let factory_hexes = [hex(14, -6), hex(-8, 4)];

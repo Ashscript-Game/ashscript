@@ -15,6 +15,7 @@ use ashscript_types::{
 use hecs::{Entity, Or};
 use hexx::{shapes, Hex};
 use rand::random;
+use tracing::trace;
 
 use crate::game_state::BotGameState;
 
@@ -25,7 +26,7 @@ pub fn main(game_state: &mut BotGameState, memory: &mut BotMemory) -> Intents {
 
     let mut bot_state = BotState::new();
 
-    println!("[generalist ai] tick: {}", game_state.global.tick);
+    trace!(target: "generalist_ai", tick = game_state.global.tick, "running generalist ai");
 
     organize_units(game_state, memory, &mut bot_state);
 
@@ -278,7 +279,7 @@ fn move_unit(
             }));
         }
     } else {
-        println!("[generalist ai] no path found");
+        trace!(target: "generalist_ai", "no path found");
     }
 }
 
@@ -479,9 +480,11 @@ pub fn factories_spawn_units(
             continue;
         };
 
-        println!(
-            "[generalist ai] trying to spawn a unit from factory at ({}, {})",
-            tile.hex.x, tile.hex.y
+        trace!(
+            target: "generalist_ai",
+            x = tile.hex.x,
+            y = tile.hex.y,
+            "trying to spawn a unit from factory"
         );
 
         let bonus_generate = random::<u32>() % 8;

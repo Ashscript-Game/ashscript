@@ -1,5 +1,6 @@
 use ashscript_types::components::{body::UnitBody, health::Health};
 use hecs::Entity;
+use tracing::trace;
 
 use crate::game_state::GameState;
 
@@ -15,6 +16,6 @@ pub fn delete_0_health(game_state: &mut GameState) {
 
     for entity in remove_entities {
         let result = game_state.despawn_entity(entity);
-        println!("despawn result: {result:?}");
+        trace!(?result, "despawned 0-health entity");
     }
 }

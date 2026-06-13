@@ -7,6 +7,7 @@ use ashscript_types::{
 };
 use hashbrown::HashMap;
 use hexx::Hex;
+use tracing::trace;
 
 use crate::{engine::generate::component::new_unit, game_state::GameState};
 
@@ -268,7 +269,7 @@ fn process_substation_collect_actions(game_state: &mut GameState, actions: &[act
         else {
             continue;
         };
-        println!("energy collected: {}", action.energy_collected);
+        trace!(energy = action.energy_collected, "substation energy collected");
         energy.current = energy.current.saturating_add(action.energy_collected).min(energy.capacity);
     }
 }
