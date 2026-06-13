@@ -1,0 +1,47 @@
+name: CI
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    name: Build & test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install system dependencies (Bevy)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y -qq \
+            pkg-config libx11-dev libasound2-dev libudev-dev \
+            libxkbcommon-x11-0 librust-alsa-sys-dev
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Build workspace
+        run: cargo build --workspace --verbose
+      - name: Test workspace
+        run: cargo test --workspace --verbose
+
+  clippy:
+    name: Clippy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install system dependencies (Bevy)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y -qq \
+            pkg-config libx11-dev libasound2-dev libudev-dev \
+            libxkbcommon-x11-0 librust-alsa-sys-dev
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+      - uses: Swatinem/rust-cache@v2
+      - name: Clippy
+        run: cargo clippy --workspace --all-targets

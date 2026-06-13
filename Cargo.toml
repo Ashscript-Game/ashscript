@@ -1,0 +1,65 @@
+[workspace]
+resolver = "2"
+members = ["packages/*"]
+
+[workspace.package]
+edition = "2021"
+license = "MIT OR Apache-2.0"
+authors = ["Ashscript Contributors"]
+homepage = "https://github.com/Ashscript-Game/ashscript"
+repository = "https://github.com/Ashscript-Game/ashscript"
+
+# Dependencies shared across packages are declared once here and referenced
+# with `{ workspace = true }` in each member, keeping versions in lockstep.
+[workspace.dependencies]
+# Internal
+ashscript-types = { path = "packages/ashscript-types" }
+
+# Shared third-party
+serde = { version = "1.0.213", features = ["derive"] }
+serde_json = "1.0.132"
+hexx = { version = "0.18.0", features = ["serde"] }
+hashbrown = { version = "0.15.0", features = ["serde"] }
+enum-map = { version = "2.7.3", features = ["serde"] }
+enum-iterator = "2.1.0"
+glam = "0.27.0"
+uuid = { version = "1.11.0", features = ["serde", "v4"] }
+hecs = { version = "0.10.5", features = ["serde"] }
+postcard = { version = "1.0.10", features = ["use-std"] }
+lazy_static = "1.5.0"
+libnoise = "1.1.2"
+log = "0.4.22"
+rand = "0.8.5"
+
+# Async / server stack
+tokio = { version = "1.40.0", features = ["full"] }
+axum = "0.7.7"
+socketioxide = { version = "0.14.1", features = ["state"] }
+fern = { version = "0.6.2", features = ["colored"] }
+humantime = "2.1.0"
+
+# Profiles live at the workspace root (Cargo ignores profiles in member crates).
+# These follow Bevy's recommended setup: optimize dependencies even in dev so the
+# client stays playable, while keeping the local crates quick to recompile.
+[profile.dev]
+debug = 0
+strip = "debuginfo"
+opt-level = 1
+
+[profile.dev.package."*"]
+opt-level = 3
+
+[profile.release]
+opt-level = 3
+panic = "abort"
+debug = 0
+strip = "debuginfo"
+# lto = "thin" # Enable for more inlining with a bigger tradeoff in compile times
+
+# Ship this to players:
+#   cargo build --profile distribution -F tracing/release_max_level_error -F log/release_max_level_off
+[profile.distribution]
+inherits = "release"
+strip = true
+lto = "thin"
+codegen-units = 1
