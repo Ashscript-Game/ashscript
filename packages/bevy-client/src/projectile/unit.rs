@@ -19,8 +19,8 @@ pub fn update_units(mut units: Query<(&mut Transform, &Unit)>, time: Res<Time>, 
 
         transform.translation += translation_delta; */
 
-        let x_delta = (moving.target_pos.x - moving.start_pos.x) / (state.global.last_tick_duration.as_secs_f32() * PROJECTILE_MOVE_END_TICK_PORTION)  * time.delta_seconds() /* * direction.x */;
-        let y_delta = (moving.target_pos.y - moving.start_pos.y) / (state.global.last_tick_duration.as_secs_f32() * PROJECTILE_MOVE_END_TICK_PORTION)  * time.delta_seconds() /* * direction.y */;
+        let x_delta = (moving.target_pos.x - moving.start_pos.x) / (state.global.last_tick_duration.as_secs_f32() * PROJECTILE_MOVE_END_TICK_PORTION)  * time.delta_secs() /* * direction.x */;
+        let y_delta = (moving.target_pos.y - moving.start_pos.y) / (state.global.last_tick_duration.as_secs_f32() * PROJECTILE_MOVE_END_TICK_PORTION)  * time.delta_secs() /* * direction.y */;
 
         transform.translation.x += x_delta;
         transform.translation.y += y_delta;
@@ -35,8 +35,8 @@ pub fn units_stop_move(
         let Some(moving) = &unit.moving else {
             continue;
         };
-        let from_hex = HEX_LAYOUT.world_pos_to_hex(moving.start_pos.truncate());
-        let target_hex = HEX_LAYOUT.world_pos_to_hex(moving.target_pos.truncate());
+        let from_hex = HEX_LAYOUT.world_pos_to_hex(hexx::Vec2::new(moving.start_pos.x, moving.start_pos.y));
+        let target_hex = HEX_LAYOUT.world_pos_to_hex(hexx::Vec2::new(moving.target_pos.x, moving.target_pos.y));
 
         unit_transform.translation = moving.target_pos;
         unit.moving = None;

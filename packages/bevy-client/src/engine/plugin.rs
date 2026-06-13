@@ -5,7 +5,7 @@ use bevy::{
     app::{App, Plugin, Startup, Update},
     prelude::*,
     time::common_conditions::on_timer,
-    utils::hashbrown::HashSet,
+    platform::collections::HashSet,
 };
 use hexx::Hex;
 
@@ -25,9 +25,9 @@ pub struct EnginePlugin;
 
 impl Plugin for EnginePlugin {
     fn build(&self, app: &mut App) {
-        app.add_event::<TickEvent>()
-            .add_event::<ProjectileMoveEndEvent>()
-            .add_event::<LoadChunks>()
+        app.add_message::<TickEvent>()
+            .add_message::<ProjectileMoveEndEvent>()
+            .add_message::<LoadChunks>()
             .add_systems(Update, (projectile_move_end_event,))
             .add_systems(
                 Update,
@@ -43,12 +43,12 @@ impl Plugin for EnginePlugin {
                         generate_turrets_from_keyframe,
                         generate_distributors_from_keyframe,
                     )
-                        .run_if(on_event::<LoadChunks>()),
+                        .run_if(on_message::<LoadChunks>),
                     (units_attack_from_actions, (move_units_from_actions), generate_units_from_factory, generate_attack_projectiles_from_keyframe).chain(),
                 )
                     .chain()
-                    .run_if(on_event::<TickEvent>()),
-            ).add_systems(Update, (kill_units).run_if(on_event::<ProjectileMoveEndEvent>()));
+                    .run_if(on_message::<TickEvent>),
+            ).add_systems(Update, (kill_units).run_if(on_message::<ProjectileMoveEndEvent>));
     }
 }
 
@@ -62,14 +62,14 @@ fn reset_projectile_move_end_timer(mut projectile_timer: ResMut<ProjectileMoveEn
 }
 
 fn projectile_move_end_event(
-    mut event_writer: EventWriter<ProjectileMoveEndEvent>,
+    mut event_writer: MessageWriter<ProjectileMoveEndEvent>,
     mut projectile_timer: ResMut<ProjectileMoveEndTimer>,
     time: Res<Time>,
 ) {
     projectile_timer.0.tick(time.delta());
 
     if projectile_timer.0.just_finished() {
-        event_writer.send(ProjectileMoveEndEvent);
+        event_writer.write(ProjectileMoveEndEvent);
     }
 }
 
@@ -85,7 +85,7 @@ pub fn chunk_load_update_events(
     state: Res<State>,
     mut loaded_chunks: ResMut<LoadedChunks>,
     mut unloaded_chunks: ResMut<UnloadedChunks>,
-    mut event_writer: EventWriter<LoadChunks>,
+    mut event_writer: MessageWriter<LoadChunks>,
 ) {
     println!("finding chunks to load");
 
@@ -106,7 +106,7 @@ pub fn chunk_load_update_events(
         return;
     }
 
-    event_writer.send(LoadChunks);
+    event_writer.write(LoadChunks);
 }
 
 /* pub fn kill_0_health(

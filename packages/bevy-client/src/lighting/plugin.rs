@@ -55,7 +55,7 @@ fn generate_lights(mut commands: Commands) {
 }
 
 fn update_lights(mut query: Query<&mut SkylightLight2D>, state: Res<State>) {
-    let mut skylight = query.single_mut();
+    let mut skylight = query.single_mut().unwrap();
 
     let intensity = match state.global.is_day() {
         true => 0.025,

@@ -1,7 +1,7 @@
 
 use std::sync::LazyLock;
 
-use bevy::utils::hashbrown::HashSet;
+use bevy::platform::collections::HashSet;
 use enum_map::{enum_map, EnumMap};
 use libnoise::prelude::*;
 

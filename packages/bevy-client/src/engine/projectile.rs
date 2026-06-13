@@ -14,8 +14,10 @@ pub fn generate_attack_projectiles_from_keyframe(
             continue;
         };
 
-        let start_pos = HEX_LAYOUT.hex_to_world_pos(action.attacker_hex).extend(0.);
-        let target_pos = HEX_LAYOUT.hex_to_world_pos(action.target_hex).extend(0.);
+        let attacker_world = HEX_LAYOUT.hex_to_world_pos(action.attacker_hex);
+        let target_world = HEX_LAYOUT.hex_to_world_pos(action.target_hex);
+        let start_pos = Vec3::new(attacker_world.x, attacker_world.y, 0.);
+        let target_pos = Vec3::new(target_world.x, target_world.y, 0.);
         create_laser(&start_pos, &target_pos, *target_entity, 1, &mut commands, &asset_server);
     }
 }

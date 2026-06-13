@@ -1,6 +1,6 @@
 use ashscript_types::constants::map::HEX_LAYOUT;
 use bevy::{
-    app::{App, Plugin}, prelude::*, render::view::RenderLayers, utils::hashbrown::HashMap
+    app::{App, Plugin}, camera::visibility::RenderLayers, platform::collections::HashMap, prelude::*
 };
 use bevy_magic_light_2d::prelude::CAMERA_LAYER_OBJECTS;
 use uuid::Uuid;
@@ -28,13 +28,13 @@ pub fn spawn_assembler(
     let world_pos = HEX_LAYOUT.hex_to_world_pos(hex);
 
     commands.spawn((
-        SpriteBundle {
-            texture: asset_server.load(assembler::ASSET_PATH),
-            transform: Transform {
-                translation: Vec3::new(world_pos.x, world_pos.y, 1.0),
-                scale: Vec3::new(1.2, 1.2, 1.0),
-                ..default()
-            },
+        Sprite {
+            image: asset_server.load(assembler::ASSET_PATH),
+            ..default()
+        },
+        Transform {
+            translation: Vec3::new(world_pos.x, world_pos.y, 1.0),
+            scale: Vec3::new(1.2, 1.2, 1.0),
             ..default()
         },
         OccupiesTile,

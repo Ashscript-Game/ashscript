@@ -96,7 +96,7 @@ pub fn handle_network_events(
     mut state: ResMut<State>,
     mut actions: ResMut<Actions>,
     mut net_stats: ResMut<NetDebugStats>,
-    mut event_writer: EventWriter<TickEvent>,
+    mut event_writer: MessageWriter<TickEvent>,
 ) {
     // `try_recv` is non-blocking; `Err` (empty or disconnected) is a no-op.
     let Ok(data) = network_info.receiver.lock().unwrap().try_recv() else {
@@ -124,5 +124,5 @@ pub fn handle_network_events(
     state.world = world;
     actions.0 = keyframe.actions;
 
-    event_writer.send(TickEvent);
+    event_writer.write(TickEvent);
 }

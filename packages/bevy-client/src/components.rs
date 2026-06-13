@@ -1,8 +1,8 @@
 use ashscript_types::{components::{body::UnitBody, energy::Energy, health::Health, resource::ResourceNode, solar_panel::SolarPanel, storage::Storage, substation::Substation, turbine::Turbine}, global::Global, keyframe::KeyFrame, map::Map, objects::GameObjectKind};
 use bevy::{
     ecs::system::SystemParam,
+    platform::collections::{HashMap, HashSet},
     prelude::*,
-    utils::{hashbrown::HashSet, HashMap},
 };
 use enum_map::EnumMap;
 use hexx::Hex;
@@ -119,13 +119,13 @@ pub struct Turret {
     pub store: Store,
 }
 
-#[derive(Event)]
+#[derive(Message)]
 pub struct TickEvent;
 
-#[derive(Event)]
+#[derive(Message)]
 pub struct LoadChunks;
 
-#[derive(Event)]
+#[derive(Message)]
 pub struct ProjectileMoveEndEvent;
 
 #[derive(Resource)]
@@ -146,15 +146,15 @@ pub struct MappedGameObjects<'w, 's> {
 
 impl<'w, 's> MappedGameObjects<'w, 's> {
     pub fn remove(&mut self, hex: &Hex, kind: GameObjectKind) -> Option<Entity> {
-        self.entities.single_mut().0[kind].remove(hex)
+        self.entities.single_mut().unwrap().0[kind].remove(hex)
     }
 
     pub fn insert(&mut self, hex: Hex, kind: GameObjectKind, entity: Entity) {
-        self.entities.single_mut().0[kind].insert(hex, entity);
+        self.entities.single_mut().unwrap().0[kind].insert(hex, entity);
     }
 
     pub fn entity(&self, hex: &Hex, kind: GameObjectKind) -> Option<&Entity> {
-        self.entities.single().0[kind].get(hex)
+        self.entities.single().unwrap().0[kind].get(hex)
     }
 
     pub fn entity_unchecked(&self, hex: &Hex, kind: GameObjectKind) -> &Entity {
@@ -169,7 +169,7 @@ impl<'w, 's> MappedGameObjects<'w, 's> {
     }
 
     pub fn entity_from_server(&self, entity: hecs::Entity) -> Option<&Entity> {
-        self.server_client_entities.single().0.get(&entity)
+        self.server_client_entities.single().unwrap().0.get(&entity)
     }
 
     pub fn entity_from_server_unchecked(&self, entity: hecs::Entity) -> &Entity {

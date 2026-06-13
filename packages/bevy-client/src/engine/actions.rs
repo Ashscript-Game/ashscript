@@ -1,5 +1,5 @@
 use ashscript_types::actions::{self, UnitAttack};
-use bevy::{prelude::*, utils::hashbrown::HashMap};
+use bevy::{platform::collections::HashMap, prelude::*};
 use hexx::Hex;
 
 use crate::components::{Actions, GameObjectKindComp, HealthComp, State, Unit};

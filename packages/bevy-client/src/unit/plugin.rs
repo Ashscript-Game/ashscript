@@ -1,8 +1,8 @@
 use ashscript_types::{components::{body::UnitBody, energy::Energy, health::Health}, constants::map::HEX_LAYOUT, objects::GameObjectKind};
 use bevy::{
     app::{App, Plugin},
+    camera::visibility::RenderLayers,
     prelude::*,
-    render::view::RenderLayers,
 };
 use bevy_magic_light_2d::prelude::{OmniLightSource2D, CAMERA_LAYER_OBJECTS};
 use enum_map::enum_map;
@@ -56,13 +56,13 @@ pub fn create_unit(
                 },
                 ..default()
             }, */
-            SpriteBundle {
-                texture: asset_server.load(unit::ASSET_PATH),
-                transform: Transform {
-                    translation: Vec3::new(world_pos.x, world_pos.y, 1.0),
-                    scale: Vec3::new(1.2, 1.2, 1.0),
-                    ..default()
-                },
+            Sprite {
+                image: asset_server.load(unit::ASSET_PATH),
+                ..default()
+            },
+            Transform {
+                translation: Vec3::new(world_pos.x, world_pos.y, 1.0),
+                scale: Vec3::new(1.2, 1.2, 1.0),
                 ..default()
             },
             OmniLightSource2D {

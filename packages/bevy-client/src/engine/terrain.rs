@@ -1,11 +1,9 @@
 use ashscript_types::constants::map::{CHUNK_SIZE, HEX_LAYOUT};
 use bevy::{
+    asset::RenderAssetUsages,
+    camera::visibility::RenderLayers,
+    mesh::{Indices, PrimitiveTopology},
     prelude::*,
-    render::{
-        mesh::{Indices, PrimitiveTopology},
-        render_asset::RenderAssetUsages,
-        view::RenderLayers,
-    },
 };
 use bevy_magic_light_2d::prelude::CAMERA_LAYER_FLOOR;
 use hexx::{hex, shapes, Hex, HexLayout, HexOrientation, PlaneMeshBuilder};
@@ -72,12 +70,9 @@ fn generate_chunk(
     // let handle = materials.add(ColorMaterial::from(COLORS[0]));
 
     commands.spawn((
-        ColorMesh2dBundle {
-            transform: Transform::from_xyz(pos.x, pos.y, 0.0),
-            mesh: mesh_handle.clone().into(),
-            material: material_handle,
-            ..default()
-        },
+        Mesh2d(mesh_handle.clone()),
+        MeshMaterial2d(material_handle),
+        Transform::from_xyz(pos.x, pos.y, 0.0),
         RenderLayers::from_layers(CAMERA_LAYER_FLOOR),
     ));
 }
@@ -85,16 +80,32 @@ fn generate_chunk(
 pub fn hexagonal_plane(hex_layout: &HexLayout) -> Mesh {
     let mesh_info = PlaneMeshBuilder::new(hex_layout)
         // < 1 creates borders around hexes
-        .with_scale(Vec3::splat(1. /* 0.95 */))
-        .facing(Vec3::Z)
+        .with_scale(hexx::Vec3::splat(1. /* 0.95 */))
+        .facing(hexx::Vec3::Z)
         .center_aligned()
         .build();
+    let positions = mesh_info
+        .vertices
+        .iter()
+        .map(|v| [v.x, v.y, v.z])
+        .collect::<Vec<[f32; 3]>>();
+    let normals = mesh_info
+        .normals
+        .iter()
+        .map(|v| [v.x, v.y, v.z])
+        .collect::<Vec<[f32; 3]>>();
+    let uvs = mesh_info
+        .uvs
+        .iter()
+        .map(|v| [v.x, v.y])
+        .collect::<Vec<[f32; 2]>>();
+
     Mesh::new(
         PrimitiveTopology::TriangleList,
         RenderAssetUsages::RENDER_WORLD,
     )
-    .with_inserted_attribute(Mesh::ATTRIBUTE_POSITION, mesh_info.vertices)
-    .with_inserted_attribute(Mesh::ATTRIBUTE_NORMAL, mesh_info.normals)
-    .with_inserted_attribute(Mesh::ATTRIBUTE_UV_0, mesh_info.uvs)
+    .with_inserted_attribute(Mesh::ATTRIBUTE_POSITION, positions)
+    .with_inserted_attribute(Mesh::ATTRIBUTE_NORMAL, normals)
+    .with_inserted_attribute(Mesh::ATTRIBUTE_UV_0, uvs)
     .with_inserted_indices(Indices::U16(mesh_info.indices))
 }

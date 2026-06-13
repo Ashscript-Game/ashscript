@@ -1,5 +1,5 @@
 use ashscript_types::{constants::map::HEX_LAYOUT, objects::GameObjectKind};
-use bevy::{ecs::observer::TriggerTargets, input::mouse::MouseButtonInput, prelude::*};
+use bevy::{input::mouse::MouseButtonInput, prelude::*};
 use bevy_egui::{
     egui::{self, Color32, Vec2, Vec2b},
     EguiContexts,
@@ -17,14 +17,14 @@ use crate::{
 };
 
 pub fn handle_mouse_click(
-    mut mouse_reader: EventReader<MouseButtonInput>,
+    mut mouse_reader: MessageReader<MouseButtonInput>,
     windows: Query<&Window>,
     cameras: Query<(&Camera, &GlobalTransform)>,
     units: Query<(&GameObjectKindComp, &Transform)>,
     mapped_game_objects: MappedGameObjects,
     mut selected: ResMut<SelectedGameObjects>,
 ) {
-    let window = windows.single();
+    let window = windows.single().unwrap();
 
     for (camera, camera_transform) in cameras.iter() {
         for event in mouse_reader.read() {
@@ -35,19 +35,22 @@ pub fn handle_mouse_click(
 
                     let Some(mouse_pos) = window
                         .cursor_position()
-                        .and_then(|cursor| camera.viewport_to_world_2d(camera_transform, cursor))
+                        .and_then(|cursor| camera.viewport_to_world_2d(camera_transform, cursor).ok())
                     else {
                         continue;
                     };
 
-                    let hex = HEX_LAYOUT.world_pos_to_hex(mouse_pos);
+                    let hex = HEX_LAYOUT.world_pos_to_hex(hexx::Vec2::new(mouse_pos.x, mouse_pos.y));
 
                     if let Some(entity) = mapped_game_objects.entity(&hex, GameObjectKind::Unit) {
                         let (_, transform) = units.get(*entity).unwrap();
 
                         println!("selected unit at: {} {}", hex.x, hex.y);
 
-                        let hex = HEX_LAYOUT.world_pos_to_hex(transform.translation.truncate());
+                        let hex = HEX_LAYOUT.world_pos_to_hex(hexx::Vec2::new(
+                            transform.translation.x,
+                            transform.translation.y,
+                        ));
 
                         selected.0.insert(*entity);
                     }
@@ -83,9 +86,11 @@ pub fn select_ui(
         .min_width(200.0)
         .max_width(200.0);
 
-    set_theme(egui.ctx_mut(), LATTE);
+    let ctx = egui.ctx_mut().unwrap();
+    set_theme(ctx, LATTE);
 
-    panel.show(egui.ctx_mut(), |ui| {
+    let ctx = egui.ctx_mut().unwrap();
+    panel.show(ctx, |ui| {
         egui::ScrollArea::vertical().show(ui, |ui| {
             for entity in selected.0.iter() {
                 let Ok((transform, kind, owner, unit, unit_body, health, energy, storage)) = query.get(*entity)
@@ -106,10 +111,16 @@ pub fn select_ui(
                     format!(
                         "{}, {}",
                         HEX_LAYOUT
-                            .world_pos_to_hex(transform.translation.truncate())
+                            .world_pos_to_hex(hexx::Vec2::new(
+                                transform.translation.x,
+                                transform.translation.y,
+                            ))
                             .x,
                         HEX_LAYOUT
-                            .world_pos_to_hex(transform.translation.truncate())
+                            .world_pos_to_hex(hexx::Vec2::new(
+                                transform.translation.x,
+                                transform.translation.y,
+                            ))
                             .y
                     ),
                 );

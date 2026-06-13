@@ -25,11 +25,11 @@ impl Plugin for ProjectilePlugin {
         )
         .add_systems(
             Update,
-            units_stop_move.run_if(on_event::<ProjectileMoveEndEvent>()),
+            units_stop_move.run_if(on_message::<ProjectileMoveEndEvent>),
         )
         /* .add_systems(
             Update,
-            (kill_lasers, kill_resource_blobs).run_if(on_event::<ProjectileMoveEndEvent>()),
+            (kill_lasers, kill_resource_blobs).run_if(on_message::<ProjectileMoveEndEvent>),
         ) */;
     }
 }

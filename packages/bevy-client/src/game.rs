@@ -1,8 +1,10 @@
 use bevy::{
     app::{App, Plugin, Startup},
+    camera::RenderTarget,
+    camera::visibility::RenderLayers,
+    platform::collections::HashMap,
     prelude::*,
-    render::{camera::RenderTarget, view::RenderLayers},
-    utils::hashbrown::HashMap,
+    render::view::Hdr,
 };
 use bevy_magic_light_2d::{
     prelude::{CameraTargets, CAMERA_LAYER_FLOOR, CAMERA_LAYER_OBJECTS, CAMERA_LAYER_WALLS},
@@ -36,26 +38,26 @@ impl Plugin for GamePlugin {
 fn game_init(mut commands: Commands, camera_targets: Res<CameraTargets>) {
     // commands.spawn(Camera2dBundle::default());
 
-    let projection: OrthographicProjection = OrthographicProjection {
-        scale: constants::camera::MIN_SCALE,
-        // near: -2000.0,
-        // far: 2000.0,
-        near: -1000.0,
-        far: 1000.0,
-        ..default()
+    let projection = || {
+        Projection::Orthographic(OrthographicProjection {
+            scale: constants::camera::MIN_SCALE,
+            // near: -2000.0,
+            // far: 2000.0,
+            near: -1000.0,
+            far: 1000.0,
+            ..OrthographicProjection::default_2d()
+        })
     };
 
     commands.spawn((
-        Camera2dBundle {
-            camera: Camera {
-                hdr: true,
-                order: 1,
-                target: RenderTarget::Image(camera_targets.floor_target.clone()),
-                ..Default::default()
-            },
-            projection: projection.clone(),
+        Camera2d,
+        Camera {
+            order: 1,
             ..Default::default()
         },
+        Hdr,
+        RenderTarget::Image(camera_targets.floor_target.clone().into()),
+        projection(),
         Name::new("floor_camera"),
         FloorCamera,
         SpriteCamera,
@@ -64,16 +66,14 @@ fn game_init(mut commands: Commands, camera_targets: Res<CameraTargets>) {
     ));
 
     commands.spawn((
-        Camera2dBundle {
-            camera: Camera {
-                hdr: true,
-                order: 1,
-                target: RenderTarget::Image(camera_targets.walls_target.clone()),
-                ..Default::default()
-            },
-            projection: projection.clone(),
+        Camera2d,
+        Camera {
+            order: 1,
             ..Default::default()
         },
+        Hdr,
+        RenderTarget::Image(camera_targets.walls_target.clone().into()),
+        projection(),
         Name::new("walls_camera"),
         WallsCamera,
         SpriteCamera,
@@ -82,16 +82,14 @@ fn game_init(mut commands: Commands, camera_targets: Res<CameraTargets>) {
     ));
 
     commands.spawn((
-        Camera2dBundle {
-            camera: Camera {
-                hdr: true,
-                order: 1,
-                target: RenderTarget::Image(camera_targets.objects_target.clone()),
-                ..Default::default()
-            },
-            projection: projection.clone(),
+        Camera2d,
+        Camera {
+            order: 1,
             ..Default::default()
         },
+        Hdr,
+        RenderTarget::Image(camera_targets.objects_target.clone().into()),
+        projection(),
         /* BloomSettings::NATURAL, */
         Name::new("obejects_camera"),
         ObjectsCamera,

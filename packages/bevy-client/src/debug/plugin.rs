@@ -3,9 +3,7 @@ use bevy::{
     diagnostic::{
         DiagnosticsStore, EntityCountDiagnosticsPlugin, FrameTimeDiagnosticsPlugin,
     },
-    input::keyboard::KeyboardInput,
     prelude::*,
-    render::view::RenderLayers,
 };
 use bevy_egui::{egui, EguiContexts};
 use bevy_magic_light_2d::gi::render_layer::ALL_LAYERS;
@@ -46,7 +44,7 @@ fn debug_window(
     egui::Window::new("Debug")
         .anchor(egui::Align2::RIGHT_TOP, [0., 0.])
         .resizable(true)
-        .show(egui.ctx_mut(), |ui| {
+        .show(egui.ctx_mut().unwrap(), |ui| {
             egui::CollapsingHeader::new("Perf")
                 .default_open(true)
                 .show(ui, |ui| {

@@ -10,8 +10,8 @@ use bevy::{
     app::App,
     diagnostic::{EntityCountDiagnosticsPlugin, FrameTimeDiagnosticsPlugin},
     log::{Level, LogPlugin},
+    platform::collections::HashMap,
     prelude::*,
-    utils::hashbrown::HashMap,
     DefaultPlugins,
 };
 use bevy_magic_light_2d::{gi::BevyMagicLight2DPlugin, prelude::*};
@@ -67,9 +67,9 @@ fn main() {
             GamePlugin,
             BevyMagicLight2DPlugin,
             HanabiPlugin,
-            bevy_egui::EguiPlugin,
-            FrameTimeDiagnosticsPlugin,
-            EntityCountDiagnosticsPlugin,
+            bevy_egui::EguiPlugin::default(),
+            FrameTimeDiagnosticsPlugin::default(),
+            EntityCountDiagnosticsPlugin::default(),
         ))
         .add_plugins(DebugToolsPlugin)
         .insert_resource(BevyMagicLight2DSettings {
@@ -120,13 +120,18 @@ impl Plugin for DebugToolsPlugin {
         #[cfg(feature = "dev")]
         app.add_plugins(bevy::diagnostic::LogDiagnosticsPlugin::default());
 
-        // NOTE: a generic egui world inspector (bevy-inspector-egui) is
-        // intentionally *not* used. Its only Bevy 0.14 line is built on
-        // `bevy_egui` 0.28, whereas this client's UI runs on `bevy_egui` 0.30.
-        // Bevy's plugin de-dup keys on the `EguiPlugin` type *name* (identical
-        // across both versions), so the inspector silently binds to a 0.28
-        // `EguiContext` that never exists and renders nothing. In-game debugging
-        // lives in the native F5 window (see `debug::plugin`) instead.
+        // Generic egui world inspector, toggled with F3. `bevy-inspector-egui`
+        // 0.36 is version-aligned with this client's `bevy_egui` 0.39, so it
+        // binds to the same `EguiContext` the rest of the UI uses. It piggybacks
+        // on the `EguiPlugin` already added in `main`, so it must come after it
+        // (it does — this plugin is added after the main plugin tuple).
+        // `input_toggle_active(false, ...)` starts hidden and flips on each F3.
+        #[cfg(feature = "dev")]
+        app.add_plugins(
+            bevy_inspector_egui::quick::WorldInspectorPlugin::new().run_if(
+                bevy::input::common_conditions::input_toggle_active(false, KeyCode::F3),
+            ),
+        );
 
         // Suppress unused-parameter warning when the `dev` feature is disabled.
         let _ = app;

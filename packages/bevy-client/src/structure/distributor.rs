@@ -2,9 +2,9 @@
 use ashscript_types::constants::map::HEX_LAYOUT;
 use bevy::{
     app::{App, Plugin},
+    camera::visibility::RenderLayers,
+    platform::collections::{HashMap, HashSet},
     prelude::*,
-    render::view::RenderLayers,
-    utils::{hashbrown::HashMap, HashSet},
 };
 use bevy_magic_light_2d::prelude::{OmniLightSource2D, CAMERA_LAYER_OBJECTS};
 use uuid::Uuid;
@@ -36,13 +36,13 @@ pub fn spawn_distributor(
     let resource = utils::pick(&resource_options);
 
     commands.spawn((
-        SpriteBundle {
-            texture: asset_server.load(distributor::ASSET_PATH),
-            transform: Transform {
-                translation: Vec3::new(world_pos.x, world_pos.y, 5.0),
-                scale: Vec3::new(0.08, 0.08, 1.0),
-                ..default()
-            },
+        Sprite {
+            image: asset_server.load(distributor::ASSET_PATH),
+            ..default()
+        },
+        Transform {
+            translation: Vec3::new(world_pos.x, world_pos.y, 5.0),
+            scale: Vec3::new(0.08, 0.08, 1.0),
             ..default()
         },
         OccupiesTile,

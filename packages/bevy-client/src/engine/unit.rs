@@ -87,8 +87,10 @@ pub fn force_units_move(
             continue;
         };
 
-        let from_hex = HEX_LAYOUT.world_pos_to_hex(moving.start_pos.truncate());
-        let target_hex = HEX_LAYOUT.world_pos_to_hex(moving.target_pos.truncate());
+        let start = moving.start_pos.truncate();
+        let target = moving.target_pos.truncate();
+        let from_hex = HEX_LAYOUT.world_pos_to_hex(hexx::Vec2::new(start.x, start.y));
+        let target_hex = HEX_LAYOUT.world_pos_to_hex(hexx::Vec2::new(target.x, target.y));
 
         transform.translation = moving.target_pos;
         unit.moving = None;
@@ -158,8 +160,9 @@ pub fn kill_units(
         } */
 
         if health.0.current == 0 {
+            let pos = transform.translation.truncate();
             game_object_map.remove(
-                &HEX_LAYOUT.world_pos_to_hex(transform.translation.truncate()),
+                &HEX_LAYOUT.world_pos_to_hex(hexx::Vec2::new(pos.x, pos.y)),
                 GameObjectKind::Unit,
             );
 
@@ -192,8 +195,10 @@ pub fn unit_move(
     unit_transform: &mut Transform,
     target_translation: &Vec3,
 ) -> GeneralResult {
-    let hex_pos = HEX_LAYOUT.world_pos_to_hex(unit_transform.translation.truncate());
-    let new_hex_pos = HEX_LAYOUT.world_pos_to_hex(target_translation.truncate());
+    let unit_pos = unit_transform.translation.truncate();
+    let target_pos = target_translation.truncate();
+    let hex_pos = HEX_LAYOUT.world_pos_to_hex(hexx::Vec2::new(unit_pos.x, unit_pos.y));
+    let new_hex_pos = HEX_LAYOUT.world_pos_to_hex(hexx::Vec2::new(target_pos.x, target_pos.y));
 
     let angle = find_angle_coords(
         unit_transform.translation.x,

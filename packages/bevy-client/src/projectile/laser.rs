@@ -2,10 +2,9 @@ use core::f32;
 use std::f32::consts::PI;
 
 use bevy::{
-    ecs::observer::TriggerTargets,
+    camera::visibility::RenderLayers,
     math::bounding::{Aabb2d, IntersectsVolume},
     prelude::*,
-    render::view::RenderLayers,
 };
 use bevy_magic_light_2d::prelude::{OmniLightSource2D, CAMERA_LAYER_OBJECTS};
 use rand::{thread_rng, Rng};
@@ -57,7 +56,7 @@ pub fn update_lasers(
 
         let direction = laser_transform.rotation * Vec3::new(0., 1., 0.);
 
-        let delta_seconds = time.delta_seconds();
+        let delta_seconds = time.delta_secs();
         let speed = Vec3::new(
             (laser.target_pos.x/* unit_transform.translation.x */ - laser.start_pos.x)
                 / (state.global.last_tick_duration.as_secs_f32()
@@ -109,14 +108,14 @@ pub fn create_laser(
             },
             ..default()
         }, */
-        SpriteBundle {
-            texture: asset_server.load(laser::ASSET_PATH),
-            transform: Transform {
-                translation: Vec3::new(start_pos.x, start_pos.y, 1.0),
-                scale: Vec3::new(0.7, 0.7, 1.0),
-                rotation: Quat::from_rotation_z(angle)
-            },
+        Sprite {
+            image: asset_server.load(laser::ASSET_PATH),
             ..default()
+        },
+        Transform {
+            translation: Vec3::new(start_pos.x, start_pos.y, 1.0),
+            scale: Vec3::new(0.7, 0.7, 1.0),
+            rotation: Quat::from_rotation_z(angle),
         },
         OmniLightSource2D {
             intensity: 0.1,
@@ -137,8 +136,6 @@ pub fn create_laser(
 
 pub fn kill_lasers(mut commands: Commands, mut lasers: Query<(&Laser, Entity)>) {
     for (_, entity) in lasers.iter_mut() {
-        let _comps = entity.components();
-
         commands.entity(entity).despawn();
     }
 }

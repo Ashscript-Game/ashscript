@@ -24,8 +24,8 @@ pub fn transfer(
 
     // check distance
 
-    let in_hex = HEX_LAYOUT.world_pos_to_hex(out_pos.truncate());
-    let out_hex = HEX_LAYOUT.world_pos_to_hex(in_pos.truncate());
+    let in_hex = HEX_LAYOUT.world_pos_to_hex(hexx::Vec2::new(out_pos.x, out_pos.y));
+    let out_hex = HEX_LAYOUT.world_pos_to_hex(hexx::Vec2::new(in_pos.x, in_pos.y));
 
     let distance = in_hex.unsigned_distance_to(out_hex);
     if distance > constants::distributor::RANGE {

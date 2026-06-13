@@ -13,7 +13,7 @@ use ashscript_types::{
     },
     constants::map::{CHUNK_SIZE, HEX_LAYOUT},
 };
-use bevy::{ecs::world, math::Vec3, prelude::*, render::view::RenderLayers, utils::hashbrown::HashSet};
+use bevy::{camera::visibility::RenderLayers, ecs::world, math::Vec3, platform::collections::HashSet, prelude::*};
 use bevy_magic_light_2d::{
     gi::render_layer::ALL_LAYERS,
     prelude::{LightOccluder2D, OmniLightSource2D, CAMERA_LAYER_OBJECTS, CAMERA_LAYER_WALLS},
@@ -169,22 +169,15 @@ fn generate_resource_node(
     let world_pos = HEX_LAYOUT.hex_to_world_pos(hex);
 
     commands.spawn((
-        ColorMesh2dBundle {
-            transform: Transform::from_xyz(
-                world_pos.x,
-                world_pos.y,
-                constants::resource_node::Z_POS,
-            ),
-            mesh: mesh.clone().into(),
-            material: material.clone(),
-            ..default()
-        },
+        Mesh2d(mesh.clone()),
+        MeshMaterial2d(material.clone()),
+        Transform::from_xyz(world_pos.x, world_pos.y, constants::resource_node::Z_POS),
         OccupiesTile,
         ResourceNodeComp(node),
         RenderLayers::from_layers(CAMERA_LAYER_OBJECTS),
     ));
 
-    resource_node_light(world_pos, commands, color);
+    resource_node_light(Vec2::new(world_pos.x, world_pos.y), commands, color);
 }
 
 fn generate_terrain(
@@ -205,13 +198,10 @@ fn generate_terrain(
 
             if surrounding_walls == 0 {
                 commands.spawn((
-                    SpriteBundle {
-                        texture: asset_server.load("terrain/wall_single.png"),
-                        transform: Transform {
-                            translation: Vec3::new(world_pos.x, world_pos.y, 1.0),
-                            scale: Vec3::new(0.2, 0.2, 1.0),
-                            ..default()
-                        },
+                    Sprite::from_image(asset_server.load("terrain/wall_single.png")),
+                    Transform {
+                        translation: Vec3::new(world_pos.x, world_pos.y, 1.0),
+                        scale: Vec3::new(0.2, 0.2, 1.0),
                         ..default()
                     },
                     Wall,
@@ -226,13 +216,10 @@ fn generate_terrain(
 
             if surrounding_walls > 0 {
                 commands.spawn((
-                    SpriteBundle {
-                        texture: asset_server.load("terrain/mountain_trans.png"),
-                        transform: Transform {
-                            translation: Vec3::new(world_pos.x, world_pos.y, 1.0),
-                            scale: Vec3::new(0.3, 0.3, 1.0),
-                            ..default()
-                        },
+                    Sprite::from_image(asset_server.load("terrain/mountain_trans.png")),
+                    Transform {
+                        translation: Vec3::new(world_pos.x, world_pos.y, 1.0),
+                        scale: Vec3::new(0.3, 0.3, 1.0),
                         ..default()
                     },
                     Wall,
@@ -246,16 +233,9 @@ fn generate_terrain(
             }
 
             commands.spawn((
-                ColorMesh2dBundle {
-                    transform: Transform::from_xyz(
-                        world_pos.x,
-                        world_pos.y,
-                        constants::resource_node::Z_POS,
-                    ),
-                    mesh: mesh.clone().into(),
-                    material: materials[3].clone(),
-                    ..default()
-                },
+                Mesh2d(mesh.clone()),
+                MeshMaterial2d(materials[3].clone()),
+                Transform::from_xyz(world_pos.x, world_pos.y, constants::resource_node::Z_POS),
                 Wall,
                 OccupiesTile,
                 RenderLayers::from_layers(CAMERA_LAYER_WALLS),
@@ -266,16 +246,9 @@ fn generate_terrain(
         }
         TerrainKind::Lava => {
             commands.spawn((
-                ColorMesh2dBundle {
-                    transform: Transform::from_xyz(
-                        world_pos.x,
-                        world_pos.y,
-                        constants::resource_node::Z_POS,
-                    ),
-                    mesh: mesh.clone().into(),
-                    material: materials[4].clone(),
-                    ..default()
-                },
+                Mesh2d(mesh.clone()),
+                MeshMaterial2d(materials[4].clone()),
+                Transform::from_xyz(world_pos.x, world_pos.y, constants::resource_node::Z_POS),
                 Lava,
                 OccupiesTile,
                 RenderLayers::from_layers(CAMERA_LAYER_OBJECTS),
@@ -289,13 +262,13 @@ fn generate_terrain(
                     jitter_intensity: 0.01,
                     jitter_translation: 0.1,
                 })
-                .insert(SpatialBundle {
-                    transform: Transform {
+                .insert((
+                    Transform {
                         translation: Vec3::new(world_pos.x, world_pos.y, 0.0),
                         ..default()
                     },
-                    ..default()
-                })
+                    Visibility::default(),
+                ))
                 .insert(RenderLayers::from_layers(ALL_LAYERS));
         }
         _ => {}
@@ -311,12 +284,12 @@ fn resource_node_light(world_pos: Vec2, commands: &mut Commands, color: Color) {
             jitter_intensity: 0.01,
             jitter_translation: 0.1,
         })
-        .insert(SpatialBundle {
-            transform: Transform {
+        .insert((
+            Transform {
                 translation: Vec3::new(world_pos.x, world_pos.y, 0.0),
                 ..default()
             },
-            ..default()
-        })
+            Visibility::default(),
+        ))
         .insert(RenderLayers::from_layers(ALL_LAYERS));
 }

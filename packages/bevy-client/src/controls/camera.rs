@@ -16,9 +16,9 @@ impl Plugin for CameraControlsPlugin {
 }
 
 fn control_camera_zoom(
-    mut cameras: Query<&mut OrthographicProjection, With<ScrollableCamera>>,
+    mut cameras: Query<&mut Projection, With<ScrollableCamera>>,
     time: Res<Time>,
-    mut scroll_event_reader: EventReader<MouseWheel>,
+    mut scroll_event_reader: MessageReader<MouseWheel>,
 ) {
     let mut projection_delta = 0.;
 
@@ -31,9 +31,11 @@ fn control_camera_zoom(
         return;
     }
 
-    for mut camera in cameras.iter_mut() {
-        camera.scale = (camera.scale - projection_delta * time.delta_seconds())
-            .clamp(constants::camera::MIN_SCALE, constants::camera::MAX_SCALE);
+    for mut projection in cameras.iter_mut() {
+        if let Projection::Orthographic(ortho) = &mut *projection {
+            ortho.scale = (ortho.scale - projection_delta * time.delta_secs())
+                .clamp(constants::camera::MIN_SCALE, constants::camera::MAX_SCALE);
+        }
     }
 }
 

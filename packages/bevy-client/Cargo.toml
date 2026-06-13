@@ -23,7 +23,7 @@ uuid = { workspace = true }
 hecs = { workspace = true }
 log = { workspace = true, features = ["max_level_debug", "release_max_level_warn"] }
 
-bevy = { version = "0.14.1", default-features = true, features = [
+bevy = { version = "0.18", default-features = true, features = [
     "bevy_render",
     "bevy_core_pipeline",
     "bevy_winit",
@@ -32,12 +32,17 @@ bevy = { version = "0.14.1", default-features = true, features = [
     "bevy_pbr",
     "embedded_watcher",
 ] }
-bevy_magic_light_2d = { git = "https://github.com/zaycev/bevy-magic-light-2d.git", branch = "issue/64" }
-bevy_egui = "0.30.0"
+# Our fork, ported to Bevy 0.18 (upstream lags at 0.17). See
+# github.com/Ashscript-Game/bevy-magic-light-2d branch bevy-0.18.
+bevy_magic_light_2d = { git = "https://github.com/Ashscript-Game/bevy-magic-light-2d.git", branch = "bevy-0.18" }
+bevy_egui = "0.39"
+# bevy-inspector-egui 0.36 pairs with bevy_egui 0.39 on Bevy 0.18; dev-only F3
+# world inspector. Now version-aligned with the project's egui, so it works.
+bevy-inspector-egui = { version = "0.36", optional = true }
 # Native, blocking WebSocket client for the keyframe stream. Driven on a
 # background thread (see `networker`), so no async runtime is pulled in.
 tungstenite = "0.29.0"
-bevy_hanabi = "0.13.0"
+bevy_hanabi = "0.18"
 
 [features]
 # cargo run --features dev
@@ -45,4 +50,5 @@ dev = [
     "bevy/dynamic_linking",
     "bevy/file_watcher",
     "bevy/asset_processor",
+    "dep:bevy-inspector-egui",
 ]

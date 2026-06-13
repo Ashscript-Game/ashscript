@@ -1,6 +1,6 @@
 use std::f32::consts::PI;
 
-use bevy::{math::bounding::{Aabb2d, IntersectsVolume}, prelude::*, render::view::RenderLayers, sprite::{MaterialMesh2dBundle, Mesh2dHandle}, utils::hashbrown::HashMap};
+use bevy::{camera::visibility::RenderLayers, math::bounding::{Aabb2d, IntersectsVolume}, platform::collections::HashMap, prelude::*};
 use bevy_magic_light_2d::prelude::{OmniLightSource2D, CAMERA_LAYER_OBJECTS};
 use rand::{thread_rng, Rng};
 
@@ -89,12 +89,12 @@ pub fn update_resource_blobs(
             (blob.target_pos.x - blob.start_pos.x)
                 / SECONDS_PER_TICK
                 / PROJECTILE_MOVE_END_TICK_PORTION
-                * time.delta_seconds()
+                * time.delta_secs()
                 * 2.,
             (blob.target_pos.y - blob.start_pos.y)
                 / SECONDS_PER_TICK
                 / PROJECTILE_MOVE_END_TICK_PORTION
-                * time.delta_seconds()
+                * time.delta_secs()
                 * 2.,
             0.,
         );
@@ -121,7 +121,7 @@ pub fn create_resource_blob(
 ) {
     /* println!("creating resource blob {:?}", resource); */
 
-    let mesh = Mesh2dHandle(meshes.add(Circle::new(10.)));
+    let mesh = meshes.add(Circle::new(10.));
 
     let mut rng = thread_rng();
     let angle_offset = PI * rng.gen_range(projectile::SPAWN_ARC.0..=projectile::SPAWN_ARC.1);
@@ -137,19 +137,16 @@ pub fn create_resource_blob(
     let color = *color_resource_map.get(resource).unwrap_or(&Color::WHITE);
 
     commands.spawn((
-        MaterialMesh2dBundle {
-            mesh,
-            material: materials.add(color),
-            transform: Transform {
-                translation: Vec3::new(
-                    start_pos.x,
-                    start_pos.y,
-                    z_order::PROJECTILE,
-                ),
-                rotation: Quat::from_rotation_z(angle),
-                scale: Vec3::new(1.0, 1.0, 1.0),
-            },
-            ..default()
+        Mesh2d(mesh),
+        MeshMaterial2d(materials.add(color)),
+        Transform {
+            translation: Vec3::new(
+                start_pos.x,
+                start_pos.y,
+                z_order::PROJECTILE,
+            ),
+            rotation: Quat::from_rotation_z(angle),
+            scale: Vec3::new(1.0, 1.0, 1.0),
         },
         OmniLightSource2D {
             intensity: 0.05,

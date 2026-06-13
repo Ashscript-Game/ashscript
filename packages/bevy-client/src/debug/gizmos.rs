@@ -7,8 +7,14 @@ use crate::constants;
 
 /// Convert a hex coordinate into a 2D world position using the shared
 /// `HEX_LAYOUT` so overlays line up exactly with rendered tiles/entities.
+///
+/// `HEX_LAYOUT` comes from `hexx`/`ashscript_types`, which pin an older `glam`
+/// than Bevy's, so `hex_to_world_pos` yields a `glam::Vec2` that is a distinct
+/// type from Bevy's `Vec2`. Rebuild it component-wise to bridge the two, matching
+/// the convention used elsewhere in the client (e.g. `engine::resources`).
 fn hex_to_world(hex: Hex) -> Vec2 {
-    HEX_LAYOUT.hex_to_world_pos(hex)
+    let pos = HEX_LAYOUT.hex_to_world_pos(hex);
+    Vec2::new(pos.x, pos.y)
 }
 
 /// Draws an arrowhead at `to`, pointing along the `from -> to` direction.
@@ -45,7 +51,10 @@ pub fn draw_debug_gizmos(
         let grid_color = css::DARK_GRAY.with_alpha(0.5);
         for chunk_hex in loaded_chunks.0.iter() {
             for hex in shapes::hexagon(chunk_hex.to_higher_res(CHUNK_SIZE), CHUNK_SIZE) {
-                let corners = HEX_LAYOUT.hex_corners(hex);
+                // `hex_corners` returns `hexx`'s `glam::Vec2`; bridge each corner to
+                // Bevy's `Vec2` the same way as `hex_to_world`.
+                let corners: [Vec2; 6] =
+                    HEX_LAYOUT.hex_corners(hex).map(|c| Vec2::new(c.x, c.y));
                 for i in 0..6 {
                     gizmos.line_2d(corners[i], corners[(i + 1) % 6], grid_color);
                 }
