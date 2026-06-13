@@ -1,0 +1,24 @@
+[package]
+name = "ashscript-types"
+version = "0.10.50"
+description = "Types for Ashscript Game game and action states"
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+homepage.workspace = true
+repository.workspace = true
+
+[dependencies]
+hashbrown = { workspace = true }
+hexx = { workspace = true }
+enum-map = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+lazy_static = { workspace = true }
+glam = { workspace = true }
+uuid = { workspace = true }
+enum-iterator = { workspace = true }
+postcard = { workspace = true }
+hecs = { workspace = true, features = ["column-serialize", "row-serialize"] }
+enum_dispatch = "0.3.13"
+bitcode = { version = "0.6.3", features = ["serde"] }
