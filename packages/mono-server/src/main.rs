@@ -16,6 +16,9 @@ pub mod simulations;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // Load configuration from a local .env if present (gitignored).
+    dotenvy::dotenv().ok();
+
     setup_logger()?;
 
     info!("Welcome to the AshScript monolithic server. Starting web-services.");
@@ -34,12 +37,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         start(send).await;
     });
 
-    info!("Starting axum / socketio server.");
+    let bind_addr =
+        std::env::var("MONO_SERVER_BIND").unwrap_or_else(|_| "0.0.0.0:3000".to_string());
+    info!("Starting axum / socketio server on {bind_addr}.");
 
-    let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await?;
-    let _ = axum::serve(listener, app).await?;
-
-    // start(&io).await;
+    let listener = tokio::net::TcpListener::bind(&bind_addr).await?;
+    axum::serve(listener, app).await?;
 
     Ok(())
 }

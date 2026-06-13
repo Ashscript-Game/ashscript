@@ -57,6 +57,7 @@ real values:
 
 | Variable | Used by | Default | Purpose |
 | --- | --- | --- | --- |
+| `MONO_SERVER_BIND` | mono-server | `0.0.0.0:3000` | game-state WebSocket bind address |
 | `RABBITMQ_URL` | intent-processor | `amqp://guest:guest@localhost:5672/%2f` | RabbitMQ connection string |
 | `INTENT_PROCESSOR_BIND` | intent-processor | `0.0.0.0:3000` | HTTP/Socket.IO bind address |
 

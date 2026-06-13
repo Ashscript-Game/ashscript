@@ -21,7 +21,6 @@ tokio = { workspace = true }
 hashbrown = { workspace = true }
 hexx = { workspace = true }
 enum-map = { workspace = true }
-lazy_static = { workspace = true }
 glam = { workspace = true }
 uuid = { workspace = true }
 libnoise = { workspace = true }
@@ -33,3 +32,4 @@ axum-extra = { version = "0.9.4", features = ["tracing", "typed-header"] }
 headers = "0.4"
 tokio-tungstenite = "0.24.0"
 base64 = "0.22.1"
+dotenvy = "0.15.7"
