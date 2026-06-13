@@ -7,14 +7,19 @@ use std::net::{SocketAddr, UdpSocket};
 
 use ashscript_types::{actions::ActionsByKind, global::Global, map::Map};
 use bevy::{
-    app::App, diagnostic::FrameTimeDiagnosticsPlugin, prelude::*, tasks::TaskPoolBuilder,
-    utils::hashbrown::HashMap, DefaultPlugins,
+    app::App,
+    diagnostic::{EntityCountDiagnosticsPlugin, FrameTimeDiagnosticsPlugin},
+    log::{Level, LogPlugin},
+    prelude::*,
+    tasks::TaskPoolBuilder,
+    utils::hashbrown::HashMap,
+    DefaultPlugins,
 };
 use bevy_eventwork::EventworkRuntime;
 use bevy_eventwork_mod_websockets::{NetworkSettings, WebSocketProvider};
 use bevy_magic_light_2d::{gi::BevyMagicLight2DPlugin, prelude::*};
 use components::{
-    Actions, DebugUI, GameSettings, GameState, LoadedChunks, PlayerStates, ProjectileMoveEndTimer, SelectedGameObjects, State, UnloadedChunks
+    Actions, DebugUI, GameSettings, GameState, LoadedChunks, NetDebugStats, PlayerStates, ProjectileMoveEndTimer, SelectedGameObjects, State, UnloadedChunks
 };
 use constants::{PROJECTILE_MOVE_END_TICK_PORTION, SECONDS_PER_TICK};
 use game::GamePlugin;
@@ -56,18 +61,20 @@ fn main() {
                         ..default()
                     }),
                     ..default()
+                })
+                .set(LogPlugin {
+                    level: Level::INFO,
+                    filter: "info,bevy_client=debug,wgpu=error,naga=warn".into(),
+                    ..default()
                 }),
             GamePlugin,
             BevyMagicLight2DPlugin,
             HanabiPlugin,
             bevy_egui::EguiPlugin,
             FrameTimeDiagnosticsPlugin,
-            /* LogDiagnosticsPlugin {
-                debug: false,
-                wait_duration: Duration::from_secs(1),
-                filter: None,
-            }, */
+            EntityCountDiagnosticsPlugin,
         ))
+        .add_plugins(DebugToolsPlugin)
         .insert_resource(BevyMagicLight2DSettings {
             light_pass_params: LightPassParams {
                 reservoir_size: 1, /* 16 */
@@ -103,5 +110,29 @@ fn main() {
         .insert_resource(UnloadedChunks::default())
         .insert_resource(SelectedGameObjects::default())
         .insert_resource(DebugUI::default())
+        .insert_resource(NetDebugStats::default())
         .run();
+}
+
+/// Bundles dev-only debugging tooling so the `#[cfg]` gating lives in one place
+/// instead of being scattered through the main plugin tuple.
+struct DebugToolsPlugin;
+
+impl Plugin for DebugToolsPlugin {
+    fn build(&self, app: &mut App) {
+        // `LogDiagnosticsPlugin` is noisy, so it only runs under `--features dev`.
+        #[cfg(feature = "dev")]
+        app.add_plugins(bevy::diagnostic::LogDiagnosticsPlugin::default());
+
+        // NOTE: a generic egui world inspector (bevy-inspector-egui) is
+        // intentionally *not* used. Its only Bevy 0.14 line is built on
+        // `bevy_egui` 0.28, whereas this client's UI runs on `bevy_egui` 0.30.
+        // Bevy's plugin de-dup keys on the `EguiPlugin` type *name* (identical
+        // across both versions), so the inspector silently binds to a 0.28
+        // `EguiContext` that never exists and renders nothing. In-game debugging
+        // lives in the native F5 window (see `debug::plugin`) instead.
+
+        // Suppress unused-parameter warning when the `dev` feature is disabled.
+        let _ = app;
+    }
 }

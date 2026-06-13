@@ -32,7 +32,6 @@ bevy = { version = "0.14.1", default-features = true, features = [
     "bevy_pbr",
     "embedded_watcher",
 ] }
-bevy-inspector-egui = "0.23.0"
 bevy_magic_light_2d = { git = "https://github.com/zaycev/bevy-magic-light-2d.git", branch = "issue/64" }
 bevy_egui = "0.30.0"
 bevy_mqtt = { version = "0.4.2", features = ["websocket"] }
@@ -46,4 +45,8 @@ bevy_hanabi = "0.13.0"
 
 [features]
 # cargo run --features dev
-dev = ["bevy/dynamic_linking", "bevy/file_watcher", "bevy/asset_processor"]
+dev = [
+    "bevy/dynamic_linking",
+    "bevy/file_watcher",
+    "bevy/asset_processor",
+]

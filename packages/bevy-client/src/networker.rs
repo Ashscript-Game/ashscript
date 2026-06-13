@@ -1,4 +1,4 @@
-use crate::components::{Actions, State, TickEvent};
+use crate::components::{Actions, NetDebugStats, State, TickEvent};
 use ashscript_types::{keyframe::KeyFrame, world::deserialize_world_data};
 use bevy::{
     app::{App, Plugin, Startup},
@@ -164,7 +164,7 @@ pub fn setup_receiver(
     );
 }
 
-pub fn handle_network_events(network_info: ResMut<NetworkInfo>, mut state: ResMut<State>, mut actions: ResMut<Actions>, mut event_writer: EventWriter<TickEvent>) {
+pub fn handle_network_events(network_info: ResMut<NetworkInfo>, mut state: ResMut<State>, mut actions: ResMut<Actions>, mut net_stats: ResMut<NetDebugStats>, mut event_writer: EventWriter<TickEvent>) {
     if let Some(message) = network_info.receiver.lock().unwrap().try_recv() {
         info!("Received event");
         match message {
@@ -177,6 +177,8 @@ pub fn handle_network_events(network_info: ResMut<NetworkInfo>, mut state: ResMu
             }
             ewebsock::WsEvent::Message(ewebsock::WsMessage::Binary(data)) => {
                 println!("received binary message of len {:?}", data.len());
+
+                net_stats.record_keyframe(data.len());
 
                 let keyframe: KeyFrame = match postcard::from_bytes(&data) {
                     Ok(keyframe) => keyframe,

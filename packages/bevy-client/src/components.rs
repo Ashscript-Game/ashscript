@@ -331,6 +331,54 @@ pub struct SelectedGameObjects(pub HashSet<Entity>);
 pub struct DebugUI {
     pub enabled: bool,
     pub chunk_lines: bool,
+    pub ranges: bool,
+    pub action_arrows: bool,
+    pub hex_coords: bool,
+}
+
+/// Network/keyframe debug stats, updated by the networker as binary keyframes
+/// arrive and read by the debug window for byte size and keyframes/sec.
+#[derive(Resource)]
+pub struct NetDebugStats {
+    /// Byte length of the most recently received keyframe.
+    pub last_keyframe_bytes: usize,
+    /// Total number of keyframes received this session.
+    pub keyframe_count: u64,
+    /// Keyframe count at the start of the current rate window.
+    pub rate_window_start_count: u64,
+    /// When the current rate window started.
+    pub rate_window_start: std::time::Instant,
+    /// Most recently computed keyframes/sec.
+    pub keyframes_per_sec: f32,
+}
+
+impl Default for NetDebugStats {
+    fn default() -> Self {
+        Self {
+            last_keyframe_bytes: 0,
+            keyframe_count: 0,
+            rate_window_start_count: 0,
+            rate_window_start: std::time::Instant::now(),
+            keyframes_per_sec: 0.,
+        }
+    }
+}
+
+impl NetDebugStats {
+    /// Record a freshly received keyframe of `bytes` length, recomputing the
+    /// keyframes/sec rate roughly once per second.
+    pub fn record_keyframe(&mut self, bytes: usize) {
+        self.last_keyframe_bytes = bytes;
+        self.keyframe_count += 1;
+
+        let elapsed = self.rate_window_start.elapsed().as_secs_f32();
+        if elapsed >= 1. {
+            let received = (self.keyframe_count - self.rate_window_start_count) as f32;
+            self.keyframes_per_sec = received / elapsed;
+            self.rate_window_start_count = self.keyframe_count;
+            self.rate_window_start = std::time::Instant::now();
+        }
+    }
 }
 
 #[derive(Component)]
